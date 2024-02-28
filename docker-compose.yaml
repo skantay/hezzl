@@ -1,0 +1,50 @@
+version: '3'
+services:
+  postgres:
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: pass
+      POSTGRES_DB: domain
+    ports:
+      - "5432:5432"
+  postgres_test:
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: pass
+      POSTGRES_DB: domain
+    ports:
+      - "5433:5432"
+  redis:
+    image: redis:latest
+    command: redis-server --save 20 1 --loglevel warning --requirepass pass
+    ports:
+        - "6379:6379"
+    volumes: 
+      - cache:/data
+  clickhouse:
+    image: clickhouse/clickhouse-server
+    ports:
+      - "9000:9000"
+      - "9001:9001" # Дополнительный порт для HTTP интерфейса
+    ulimits:
+      nproc: 65535
+      nofile:
+        soft: 262144
+        hard: 262144
+    networks:
+      - ch_network
+  nats:
+    image: nats:latest
+    ports:
+      - "4222:4222"
+      - "8222:8222"
+
+networks:
+  ch_network:
+    driver: bridge
+
+volumes:
+  cache:
+    driver: local

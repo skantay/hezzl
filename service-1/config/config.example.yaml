@@ -1,0 +1,11 @@
+database:
+  postgres:
+    user: user
+    password: pass
+    dbname: domain
+    host: localhost
+    port:  5432
+    sslmode: disable
+server:
+  host:  localhost
+  port:  8080
