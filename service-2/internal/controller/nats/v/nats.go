@@ -2,10 +2,8 @@ package v
 
 import (
 	"context"
-	"errors"
-	"os"
-	"os/signal"
-	"syscall"
+	"fmt"
+	"runtime"
 
 	"github.com/nats-io/nats.go"
 	"github.com/skantay/service-2/internal/usecase"
@@ -27,25 +25,23 @@ func New(nc *nats.Conn, log *zap.Logger, ser usecase.Service) NC {
 }
 
 func (n natsServe) Serve(ctx context.Context) error {
-	shutdown := make(chan os.Signal, 1)
-	signal.Notify(shutdown, os.Interrupt, syscall.SIGTERM)
+	_, err := n.nc.Subscribe("Goods.Collection", func(msg *nats.Msg) {
+		n.log.Sugar().Infof("got a message")
 
-	if !n.nc.IsConnected() {
-		n.log.Error("NATS connection is not established")
-		return errors.New("NATS connection is not established")
+		fmt.Println(string(msg.Data))
+		if err := n.service.Good.Create(msg.Data); err != nil {
+			n.log.Error(err.Error())
+			return
+		}
+
+		n.log.Sugar().Infof("created a log")
+	})
+	if err != nil {
+		return err
 	}
-	go func() {
-		n.nc.Subscribe("goods", func(msg *nats.Msg) {
-			n.log.Sugar().Infof("got a message")
-			if err := n.service.Good.Create(msg.Data); err != nil {
-				n.log.Error(err.Error())
-				return
-			}
-			n.log.Sugar().Infof("created a log")
-		})
-	}()
 
-	<-shutdown
-	n.log.Info("Server gracefully shut down")
-	return nil
+	runtime.Goexit()
+
+	<-ctx.Done()
+	return ctx.Err()
 }

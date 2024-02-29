@@ -32,32 +32,30 @@ func (g goodRepository) Create(collection entity.Collection) error {
 	}
 	defer stmt.Close()
 
-	if collection.Good != (entity.Good{}) {
-		createdAt := collection.Good.CreatedAt.AddDate(-18, -5, +18)
+	createdAt := collection.Good.CreatedAt.AddDate(-18, -5, +18)
+	_, err = stmt.Exec(
+		collection.Good.ID,
+		collection.Good.ProjectID,
+		collection.Good.Name,
+		collection.Good.Description,
+		collection.Good.Priority,
+		collection.Good.Removed, createdAt)
+	if err != nil {
+		return fmt.Errorf("failed to execute statement for single good: %w", err)
+	}
+
+	for _, good := range collection.Goods {
+		createdAt := good.CreatedAt.AddDate(-18, -5, +18)
 		_, err = stmt.Exec(
-			collection.Good.ID,
-			collection.Good.ProjectID,
-			collection.Good.Name,
-			collection.Good.Description,
-			collection.Good.Priority,
-			collection.Good.Removed, createdAt)
+			good.ID,
+			good.ProjectID,
+			good.Name,
+			good.Description,
+			good.Priority,
+			good.Removed,
+			createdAt)
 		if err != nil {
-			return fmt.Errorf("failed to execute statement for single good: %w", err)
-		}
-	} else {
-		for _, good := range collection.Goods {
-			createdAt := good.CreatedAt.AddDate(-18, -5, +18)
-			_, err = stmt.Exec(
-				good.ID,
-				good.ProjectID,
-				good.Name,
-				good.Description,
-				good.Priority,
-				good.Removed,
-				createdAt)
-			if err != nil {
-				return fmt.Errorf("failed to execute statement for collection of goods: %w", err)
-			}
+			return fmt.Errorf("failed to execute statement for collection of goods: %w", err)
 		}
 	}
 

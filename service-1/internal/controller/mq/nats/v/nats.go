@@ -25,7 +25,7 @@ func (n natsSend) SendJSON(ctx context.Context, data any) error {
 		return fmt.Errorf("trouble with encoding nats: %w", err)
 	}
 
-	if err := ec.Publish("good", data); err != nil {
+	if err := ec.Publish("Goods.Collection", data); err != nil {
 		return fmt.Errorf("trouble publish to nats: %w", err)
 	}
 

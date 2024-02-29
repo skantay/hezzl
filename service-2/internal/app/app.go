@@ -62,9 +62,10 @@ func Run() error {
 
 	ctrl := v.New(nc, log, service)
 
+	log.Info("service-2 started")
 	if err := ctrl.Serve(context.Background()); err != nil {
 		return fmt.Errorf("Controller error: %w", err)
 	}
-
+	log.Info("service-2 finished")
 	return nil
 }
