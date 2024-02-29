@@ -22,7 +22,6 @@ type GoodRepository interface {
 }
 
 type Collection struct {
-	Good  entity.Good   `json:"good"`
 	Goods []entity.Good `json:"goods"`
 }
 
@@ -75,7 +74,15 @@ func (g goodRepository) Create(ctx context.Context, good entity.Good) (entity.Go
 		return newGood, fmt.Errorf("trouble executing db: %w", err)
 	}
 
-	return newGood, g.nc.SendJSON(ctx, Collection{Good: newGood})
+	var payload Collection
+
+	payload.Goods = []entity.Good{newGood}
+
+	if len(payload.Goods) != 0 {
+		g.nc.SendJSON(ctx, payload)
+	}
+
+	return newGood, nil
 }
 
 func (g goodRepository) Delete(ctx context.Context, id, projectID int) (entity.Good, error) {
@@ -114,7 +121,14 @@ func (g goodRepository) Delete(ctx context.Context, id, projectID int) (entity.G
 		return entity.Good{}, fmt.Errorf("trouble with committing a transaction: %w", err)
 	}
 
-	return updatedGood, g.nc.SendJSON(ctx, Collection{Good: updatedGood})
+	var payload Collection
+
+	payload.Goods = []entity.Good{updatedGood}
+	if len(payload.Goods) != 0 {
+		g.nc.SendJSON(ctx, payload)
+	}
+
+	return updatedGood, nil
 }
 
 func (g goodRepository) UpdateName(ctx context.Context, name string, id, projectID int) (entity.Good, error) {
@@ -153,7 +167,14 @@ func (g goodRepository) UpdateName(ctx context.Context, name string, id, project
 		return entity.Good{}, fmt.Errorf("trouble with committing a transaction: %w", err)
 	}
 
-	return updatedGood, g.nc.SendJSON(ctx, Collection{Good: updatedGood})
+	var payload Collection
+
+	payload.Goods = []entity.Good{updatedGood}
+	if len(payload.Goods) != 0 {
+		g.nc.SendJSON(ctx, payload)
+	}
+
+	return updatedGood, nil
 }
 
 func (g goodRepository) UpdateDesc(ctx context.Context, desc string, id, projectID int) (entity.Good, error) {
@@ -192,7 +213,14 @@ func (g goodRepository) UpdateDesc(ctx context.Context, desc string, id, project
 		return entity.Good{}, fmt.Errorf("trouble with committing a transaction: %w", err)
 	}
 
-	return updatedGood, g.nc.SendJSON(ctx, Collection{Good: updatedGood})
+	var payload Collection
+
+	payload.Goods = []entity.Good{updatedGood}
+	if len(payload.Goods) != 0 {
+		g.nc.SendJSON(ctx, payload)
+	}
+
+	return updatedGood, nil
 }
 
 func (g goodRepository) UpdatePriority(ctx context.Context, priority, id, projectID int) ([]entity.Good, error) {
@@ -250,7 +278,16 @@ func (g goodRepository) UpdatePriority(ctx context.Context, priority, id, projec
 		return nil, fmt.Errorf("trouble with committing transaction: %w", err)
 	}
 
-	return result, g.nc.SendJSON(ctx, Collection{Goods: result})
+	var payload Collection
+
+	for _, v := range result {
+		payload.Goods = append(payload.Goods, v)
+	}
+	if len(payload.Goods) != 0 {
+		g.nc.SendJSON(ctx, payload)
+	}
+
+	return result, nil
 }
 
 func (g goodRepository) Get(ctx context.Context, id int) (entity.Good, error) {

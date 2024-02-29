@@ -11,9 +11,9 @@ import (
 	"github.com/skantay/hezzl/config"
 	"github.com/skantay/hezzl/internal/controller/api"
 	"github.com/skantay/hezzl/internal/controller/mq/nats/v"
+	"github.com/skantay/hezzl/internal/repository/postgres"
+	cache "github.com/skantay/hezzl/internal/repository/redis"
 	"github.com/skantay/hezzl/internal/usecase"
-	"github.com/skantay/hezzl/internal/usecase/repository/postgres"
-	cache "github.com/skantay/hezzl/internal/usecase/repository/redis"
 	"github.com/skantay/hezzl/pkg/migrate"
 	psql "github.com/skantay/hezzl/pkg/postgres"
 	rds "github.com/skantay/hezzl/pkg/redis"
@@ -93,6 +93,8 @@ func Run() error {
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
+
+	log.Info("Service started")
 
 	go func() error {
 		// Run controller

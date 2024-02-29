@@ -1,4 +1,4 @@
-run:
+up:
 	docker-compose up --build
-stop
+down:
 	docker-compose down

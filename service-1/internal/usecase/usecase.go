@@ -8,8 +8,8 @@ import (
 	"time"
 
 	"github.com/skantay/hezzl/internal/entity"
-	"github.com/skantay/hezzl/internal/usecase/repository/postgres"
-	cache "github.com/skantay/hezzl/internal/usecase/repository/redis"
+	"github.com/skantay/hezzl/internal/repository/postgres"
+	cache "github.com/skantay/hezzl/internal/repository/redis"
 )
 
 type Service struct {

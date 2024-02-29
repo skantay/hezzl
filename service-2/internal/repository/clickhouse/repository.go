@@ -26,26 +26,13 @@ func (g goodRepository) Create(collection entity.Collection) error {
 	}
 	defer batch.Rollback()
 
-	stmt, err := batch.Prepare("INSERT INTO default.goods(ID, ProjectID, Name, Description, Priority, Removed, CreatedAt) VALUES (?, ?, ?, ?, ?, ?, ?)")
+	stmt, err := batch.Prepare("INSERT INTO default.goods(ID, ProjectID, Name, Description, Priority, Removed, CreatedAt) VALUES ($1, $2, $3, $4, $5, $6, $7)")
 	if err != nil {
 		return fmt.Errorf("failed to prepare statement: %w", err)
 	}
 	defer stmt.Close()
 
-	createdAt := collection.Good.CreatedAt.AddDate(-18, -5, +18)
-	_, err = stmt.Exec(
-		collection.Good.ID,
-		collection.Good.ProjectID,
-		collection.Good.Name,
-		collection.Good.Description,
-		collection.Good.Priority,
-		collection.Good.Removed, createdAt)
-	if err != nil {
-		return fmt.Errorf("failed to execute statement for single good: %w", err)
-	}
-
 	for _, good := range collection.Goods {
-		createdAt := good.CreatedAt.AddDate(-18, -5, +18)
 		_, err = stmt.Exec(
 			good.ID,
 			good.ProjectID,
@@ -53,7 +40,7 @@ func (g goodRepository) Create(collection entity.Collection) error {
 			good.Description,
 			good.Priority,
 			good.Removed,
-			createdAt)
+			good.CreatedAt)
 		if err != nil {
 			return fmt.Errorf("failed to execute statement for collection of goods: %w", err)
 		}

@@ -5,7 +5,7 @@ import (
 	"fmt"
 
 	"github.com/skantay/service-2/internal/entity"
-	repository "github.com/skantay/service-2/internal/usecase/repository/clickhouse"
+	repository "github.com/skantay/service-2/internal/repository/clickhouse"
 )
 
 type Service struct {
@@ -33,8 +33,10 @@ func (g goodUsecase) Create(data []byte) error {
 
 	err := json.Unmarshal(data, &collection)
 	if err != nil {
-		return fmt.Errorf("here error: %w", err)
+		return fmt.Errorf("json error: %w", err)
 	}
+
+	fmt.Println(collection.Goods[0].CreatedAt)
 
 	return g.repo.Create(collection)
 }

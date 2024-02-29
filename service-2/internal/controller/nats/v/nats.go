@@ -2,7 +2,6 @@ package v
 
 import (
 	"context"
-	"fmt"
 	"runtime"
 
 	"github.com/nats-io/nats.go"
@@ -28,7 +27,6 @@ func (n natsServe) Serve(ctx context.Context) error {
 	_, err := n.nc.Subscribe("Goods.Collection", func(msg *nats.Msg) {
 		n.log.Sugar().Infof("got a message")
 
-		fmt.Println(string(msg.Data))
 		if err := n.service.Good.Create(msg.Data); err != nil {
 			n.log.Error(err.Error())
 			return
