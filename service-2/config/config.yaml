@@ -1,0 +1,10 @@
+database:
+  clickhouse:
+    user: default
+    password:
+    host: clickhouse
+    port:  9000
+    db: default
+nats:
+  host: nats
+  port: 4222

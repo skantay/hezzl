@@ -50,6 +50,7 @@ services:
     depends_on:
       - postgres
       - redis
+      - nats
     networks:
       - ch_network
  service-2:

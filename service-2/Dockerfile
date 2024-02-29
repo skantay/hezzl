@@ -7,7 +7,7 @@ RUN go mod download
 
 COPY . .
 
-RUN CGO_ENABLED=0 GOOS=linux go build -o /app/service-2 ./cmd/clickhouse/main.go
+RUN CGO_ENABLED=0 GOOS=linux go build -o /app/service-2 ./cmd/app/main.go
 
 FROM alpine:3.9
 

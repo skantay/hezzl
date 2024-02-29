@@ -1,0 +1,18 @@
+database:
+  postgres:
+    user: user
+    password: pass
+    dbname: domain
+    host: postgres
+    port:  5432
+    sslmode: disable
+  redis:
+    host: redis
+    port: 6379
+    password: pass
+server:
+  host:  '0.0.0.0'
+  port:  8080
+nats:
+  host: nats
+  port: 4222
