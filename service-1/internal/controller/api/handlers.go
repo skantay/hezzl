@@ -6,6 +6,7 @@ import (
 
 	"github.com/gin-gonic/gin"
 	"github.com/skantay/hezzl/internal/entity"
+	"github.com/skantay/hezzl/internal/schemas"
 )
 
 // Internal Server Error
@@ -29,20 +30,23 @@ func (g ginController) createGoodHandler(c *gin.Context) {
 		return
 	}
 
-	type Payload struct {
-		Name string `json:"name"`
-	}
+	var request schemas.CreateRequest
 
-	var payload Payload
-
-	if err := c.BindJSON(&payload); err != nil {
+	if err := c.BindJSON(&request); err != nil {
 		g.log.Error(err.Error())
 		handleError(c, "", http.StatusBadRequest, ErrBR)
 
 		return
 	}
 
-	good, err := g.service.Good.Create(c.Request.Context(), projectID, payload.Name)
+	if err := g.validator.Struct(request); err != nil {
+		g.log.Error(err.Error())
+		handleError(c, "", http.StatusBadRequest, ErrBR)
+
+		return
+	}
+
+	good, err := g.service.Good.Create(c.Request.Context(), projectID, request.Name)
 	if err != nil && !errors.Is(err, entity.ErrProjectNotFound) {
 		g.log.Sugar().Errorf("%v", err)
 		handleError(c, "", http.StatusInternalServerError, ErrISE)
@@ -82,19 +86,7 @@ func (g ginController) goodsListHandler(c *gin.Context) {
 		return
 	}
 
-	type ResponseList struct {
-		Meta struct {
-			Total   int `json:"total"`
-			Removed int `json:"removed"`
-			Limit   int `json:"limit"`
-			Offset  int `json:"offset"`
-		} `json:"meta"`
-		Goods []struct {
-			entity.Good
-		} `json:"goods"`
-	}
-
-	var response ResponseList
+	var response schemas.ListResponse
 
 	goods, err := g.service.Good.List(c, limit, offset)
 	if err != nil {
@@ -156,20 +148,23 @@ func (g ginController) reprioritizeGoodHandler(c *gin.Context) {
 		return
 	}
 
-	type Payload struct {
-		NewPriority int `json:"newPriority"`
-	}
+	var request schemas.UpdatePriorityRequest
 
-	var payload Payload
-
-	if err := c.BindJSON(&payload); err != nil {
+	if err := c.BindJSON(&request); err != nil {
 		g.log.Error(err.Error())
 		handleError(c, "", http.StatusBadRequest, ErrBR)
 
 		return
 	}
 
-	goods, err := g.service.Good.Reprioritiize(c.Request.Context(), payload.NewPriority, id, projectID)
+	if err := g.validator.Struct(request); err != nil {
+		g.log.Error(err.Error())
+		handleError(c, "", http.StatusBadRequest, ErrBR)
+
+		return
+	}
+
+	goods, err := g.service.Good.Reprioritiize(c.Request.Context(), request.NewPriority, id, projectID)
 	if err != nil {
 		if errors.Is(err, entity.ErrGoodNotFound) {
 
@@ -239,11 +234,7 @@ func (g ginController) removeGoodHandler(c *gin.Context) {
 		return
 	}
 
-	response := struct {
-		Id         int  `json:"id"`
-		CampaignID int  `json:"campignID"`
-		Removed    bool `json:"removed"`
-	}{
+	response := schemas.DeletedListResponse{
 		Id:         good.ID,
 		CampaignID: good.ProjectID,
 		Removed:    good.Removed,
@@ -276,21 +267,23 @@ func (g ginController) updateGoodHandler(c *gin.Context) {
 		return
 	}
 
-	type Payload struct {
-		Name        string  `json:"name"`
-		Description *string `json:"description"`
-	}
+	var request schemas.UpdateGoodRequest
 
-	var payload Payload
-
-	if err := c.BindJSON(&payload); err != nil {
+	if err := c.BindJSON(&request); err != nil {
 		g.log.Error(err.Error())
 		handleError(c, "", http.StatusBadRequest, ErrBR)
 
 		return
 	}
 
-	if payload.Name == "" {
+	if err := g.validator.Struct(request); err != nil {
+		g.log.Error(err.Error())
+		handleError(c, "", http.StatusBadRequest, ErrBR)
+
+		return
+	}
+
+	if request.Name == "" {
 		g.log.Error("empty payload name")
 		handleError(c, "", http.StatusBadRequest, ErrBR)
 
@@ -299,13 +292,13 @@ func (g ginController) updateGoodHandler(c *gin.Context) {
 
 	emptyDesc := false
 
-	if payload.Description == nil {
+	if request.Description == nil {
 		emptyDesc = true
 		word := ""
-		payload.Description = &word
+		request.Description = &word
 	}
 
-	good, err := g.service.Good.Update(c.Request.Context(), id, projectID, payload.Name, *payload.Description, emptyDesc)
+	good, err := g.service.Good.Update(c.Request.Context(), id, projectID, request.Name, *request.Description, emptyDesc)
 	if err != nil {
 		if errors.Is(err, entity.ErrGoodNotFound) {
 

@@ -6,9 +6,11 @@ import (
 	"net/http"
 	"time"
 
-	"github.com/gin-gonic/gin"
 	"github.com/skantay/hezzl/config"
 	"github.com/skantay/hezzl/internal/usecase"
+
+	"github.com/gin-gonic/gin"
+	"github.com/go-playground/validator"
 	"go.uber.org/zap"
 )
 
@@ -17,20 +19,23 @@ type Controller interface {
 }
 
 type ginController struct {
-	service usecase.Service
-	log     *zap.Logger
-	cfg     config.Config
+	service   usecase.Service
+	log       *zap.Logger
+	cfg       config.Config
+	validator *validator.Validate
 }
 
 func New(
 	service usecase.Service,
 	log *zap.Logger,
 	cfg config.Config,
+	validator *validator.Validate,
 ) Controller {
 	return ginController{
-		service: service,
-		log:     log,
-		cfg:     cfg,
+		service:   service,
+		log:       log,
+		cfg:       cfg,
+		validator: validator,
 	}
 }
 

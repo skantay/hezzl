@@ -8,6 +8,7 @@ import (
 	"syscall"
 	"time"
 
+	"github.com/go-playground/validator"
 	"github.com/skantay/hezzl/config"
 	"github.com/skantay/hezzl/internal/controller/api"
 	"github.com/skantay/hezzl/internal/controller/mq/nats/v"
@@ -88,8 +89,10 @@ func Run() error {
 
 	service := usecase.NewService(goodUsecase)
 
+	validate := validator.New()
+
 	// Init controller
-	ctrl := api.New(service, log, cfg)
+	ctrl := api.New(service, log, cfg, validate)
 
 	ctx, cancel := context.WithTimeout(context.Background(), 5*time.Second)
 	defer cancel()
