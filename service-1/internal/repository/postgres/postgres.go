@@ -47,11 +47,17 @@ func (g goodRepository) GetMaxPriority(ctx context.Context, projectID int) (int,
 }
 
 func (g goodRepository) Create(ctx context.Context, good entity.Good) (entity.Good, error) {
+	tx, err := g.db.BeginTx(ctx, nil)
+	if err != nil {
+		return entity.Good{}, fmt.Errorf("trouble with starting a transaction: %w", err)
+	}
+	defer tx.Rollback()
+
 	stmt := `INSERT INTO goods(project_id, name, description, priority, removed, created_at)
              VALUES($1, $2, $3, $4, $5, $6) RETURNING *;`
 
 	var newGood entity.Good
-	err := g.db.QueryRowContext(ctx, stmt,
+	err = g.db.QueryRowContext(ctx, stmt,
 		good.ProjectID,
 		good.Name,
 		good.Description,
@@ -72,6 +78,11 @@ func (g goodRepository) Create(ctx context.Context, good entity.Good) (entity.Go
 			return newGood, entity.ErrProjectNotFound
 		}
 		return newGood, fmt.Errorf("trouble executing db: %w", err)
+	}
+
+	err = tx.Commit()
+	if err != nil {
+		return entity.Good{}, fmt.Errorf("trouble with committing a transaction: %w", err)
 	}
 
 	var payload Collection
