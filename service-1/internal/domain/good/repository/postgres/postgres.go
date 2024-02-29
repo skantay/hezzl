@@ -11,6 +11,11 @@ import (
 	"github.com/skantay/hezzl/internal/domain/good/repository"
 )
 
+type Collection struct {
+	Good  model.Good   `json:"good"`
+	Goods []model.Good `json:"goods"`
+}
+
 type goodRepository struct {
 	db *sql.DB
 	nc *nats.Conn
@@ -65,7 +70,7 @@ func (g goodRepository) Create(ctx context.Context, good model.Good) (model.Good
 		return newGood, err
 	}
 
-	if err := ec.Publish("good", newGood); err != nil {
+	if err := ec.Publish("good", Collection{Good: newGood}); err != nil {
 		return newGood, fmt.Errorf("publish error: %w", err)
 	}
 
@@ -113,7 +118,7 @@ func (g goodRepository) Delete(ctx context.Context, id, projectID int) (model.Go
 		return model.Good{}, err
 	}
 
-	if err := ec.Publish("good", updatedGood); err != nil {
+	if err := ec.Publish("good", Collection{Good: updatedGood}); err != nil {
 		return model.Good{}, fmt.Errorf("publish error: %w", err)
 	}
 
@@ -172,7 +177,7 @@ func (g goodRepository) UpdateNameDesc(ctx context.Context, good model.Good, emp
 		return model.Good{}, err
 	}
 
-	if err := ec.Publish("good", updatedGood); err != nil {
+	if err := ec.Publish("good", Collection{Good: updatedGood}); err != nil {
 		return model.Good{}, fmt.Errorf("publish error: %w", err)
 	}
 
@@ -184,29 +189,64 @@ func (g goodRepository) UpdatePriority(ctx context.Context, priority, id, projec
 	if err != nil {
 		return nil, fmt.Errorf("failed to begin transaction: %w", err)
 	}
-	defer tx.Rollback()
+	defer func() {
+		if err := recover(); err != nil {
+			tx.Rollback()
+		}
+		if err != nil {
+			tx.Rollback()
+		}
+	}()
 
-	// TO-DO
-	stmt := `UPDATE goods SET priority = priority + 1 WHERE project_id = $1 AND priority > $2;`
+	result := make([]model.Good, 0)
 
-	if _, err := tx.ExecContext(ctx, stmt, projectID, priority); err != nil {
-		return nil, fmt.Errorf("query 1 error: %w", err)
-	}
+	var newPriority int
+
+	stmt := `SELECT priority FROM goods WHERE id = $1 AND project_id = $2;`
+	_ = g.db.QueryRow(stmt, id, projectID).Scan(&newPriority)
+
+	stmt = `UPDATE goods SET priority = $1 WHERE priority = $2 AND project_id = $3;`
+	_, _ = tx.ExecContext(ctx, stmt, newPriority, priority, projectID)
 
 	stmt = `UPDATE goods SET priority = $1 WHERE id = $2 AND project_id = $3;`
 
-	result, err := tx.ExecContext(ctx, stmt, priority, id, projectID)
+	_, err = tx.ExecContext(ctx, stmt, priority, id, projectID)
 	if err != nil {
-		return nil, fmt.Errorf("query 2 error: %w", err)
+		if errors.Is(err, sql.ErrNoRows) {
+			return nil, model.ErrGoodNotFound
+		}
+
+		return nil, fmt.Errorf("query error: %w", err)
 	}
 
-	rowsAffected, err := result.RowsAffected()
+	stmt = `SELECT * FROM goods WHERE priority IN($1, $2)`
+
+	rows, err := g.db.QueryContext(ctx, stmt, priority, newPriority)
 	if err != nil {
-		return nil, fmt.Errorf("rows affected error: %w", err)
+		return nil, fmt.Errorf("query error: %w", err)
+	}
+	defer rows.Close()
+
+	for rows.Next() {
+		var good model.Good
+
+		if err := rows.Scan(
+			&good.ID,
+			&good.ProjectID,
+			&good.Name,
+			&good.Description,
+			&good.Priority,
+			&good.Removed,
+			&good.CreatedAt,
+		); err != nil {
+			return nil, fmt.Errorf("failed to scan row: %w", err)
+		}
+
+		result = append(result, good)
 	}
 
-	if rowsAffected == 0 {
-		return nil, model.ErrGoodNotFound
+	if err = rows.Err(); err != nil {
+		return nil, fmt.Errorf("error during iteration: %w", err)
 	}
 
 	err = tx.Commit()
@@ -214,46 +254,20 @@ func (g goodRepository) UpdatePriority(ctx context.Context, priority, id, projec
 		return nil, fmt.Errorf("failed to commit transaction: %w", err)
 	}
 
-	var updatedGoods []model.Good
+	if len(result) == 0 {
+		return nil, model.ErrGoodNotFound
+	}
 
-	query := `SELECT * FROM goods WHERE project_id = $1 AND priority >= $2;`
-
-	rows, err := g.db.QueryContext(ctx, query, projectID, priority)
+	ec, err := nats.NewEncodedConn(g.nc, "json")
 	if err != nil {
-		return nil, fmt.Errorf("failed to query updated goods: %w", err)
-	}
-	defer rows.Close()
-
-	for rows.Next() {
-		var good model.Good
-
-		err := rows.Scan(
-			&good.ID,
-			&good.ProjectID,
-			&good.Name,
-			&good.Description,
-			&good.Priority,
-			&good.Removed,
-			&good.CreatedAt)
-		if err != nil {
-			return nil, fmt.Errorf("failed to scan row into Good: %w", err)
-		}
-		updatedGoods = append(updatedGoods, good)
-		ec, err := nats.NewEncodedConn(g.nc, "json")
-		if err != nil {
-			return nil, err
-		}
-
-		if err := ec.Publish("good", good); err != nil {
-			return nil, fmt.Errorf("publish error: %w", err)
-		}
+		return nil, err
 	}
 
-	if err = rows.Err(); err != nil {
-		return nil, fmt.Errorf("error iterating over rows: %w", err)
+	if err := ec.Publish("good", Collection{Goods: result}); err != nil {
+		return nil, fmt.Errorf("publish error: %w", err)
 	}
 
-	return updatedGoods, nil
+	return result, nil
 }
 
 func (g goodRepository) Get(ctx context.Context, id int) (model.Good, error) {

@@ -39,13 +39,13 @@ func Run() error {
 	}
 
 	// In case database needs to be dropped
-	defer func() error {
-		// Migrating down
-		if err := migrateDown(db); err != nil {
-			return fmt.Errorf("migration down error: %w", err)
-		}
-		return nil
-	}()
+	// defer func() error {
+	// 	// Migrating down
+	// 	if err := migrateDown(db); err != nil {
+	// 		return fmt.Errorf("migration down error: %w", err)
+	// 	}
+	// 	return nil
+	// }()
 
 	// Connecting redis client
 	client, err := connectRedis(cfg)
@@ -54,7 +54,7 @@ func Run() error {
 	}
 	defer client.Close()
 
-	nc, err := nats.Connect(nats.DefaultURL)
+	nc, err := nats.Connect(fmt.Sprintf("nats://%s:%d", cfg.Nats.Host, cfg.Nats.Port))
 	if err != nil {
 		return err
 	}

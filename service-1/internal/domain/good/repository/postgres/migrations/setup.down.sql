@@ -1,2 +1,0 @@
-DROP TABLE IF EXISTS goods;
-DROP TABLE IF EXISTS projects;

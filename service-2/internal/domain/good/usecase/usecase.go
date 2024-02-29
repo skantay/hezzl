@@ -21,12 +21,12 @@ func New(repo repository.GoodRepository) GoodUsecase {
 }
 
 func (g goodUsecase) Create(data []byte) error {
-	var good model.Good
+	var collection model.Collection
 
-	err := json.Unmarshal(data, &good)
+	err := json.Unmarshal(data, &collection)
 	if err != nil {
 		return fmt.Errorf("here error: %w", err)
 	}
 
-	return g.repo.Create(good)
+	return g.repo.Create(collection)
 }

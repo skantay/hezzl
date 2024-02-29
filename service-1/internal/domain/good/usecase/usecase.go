@@ -128,7 +128,6 @@ func (g goodUsecase) GetGoods(ctx context.Context, limit, offset int) ([]model.G
 func (g goodUsecase) Reprioritiize(ctx context.Context, priority, id, projectID int) ([]model.Good, error) {
 	goods, err := g.repo.UpdatePriority(ctx, priority, id, projectID)
 	if err != nil {
-		g.log.Error(err.Error())
 		return nil, err
 	}
 

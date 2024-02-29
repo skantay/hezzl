@@ -6,6 +6,12 @@ import (
 
 type Config struct {
 	Database Database `yaml:"database"`
+	Nats     Nats     `yaml:"nats"`
+}
+
+type Nats struct {
+	Host string `yaml:"host"`
+	Port int    `yaml:"port"`
 }
 
 type Database struct {
@@ -17,6 +23,7 @@ type Clickhouse struct {
 	Password string `yaml:"default_password"`
 	Host     string `yaml:"host"`
 	Port     int    `yaml:"port"`
+	DB       string `yaml:"db"`
 }
 
 func Load(path string) (Config, error) {

@@ -11,3 +11,8 @@ type Good struct {
 	Removed     bool      `json:"removed"`
 	CreatedAt   time.Time `json:"createdAt"`
 }
+
+type Collection struct {
+	Good  Good   `json:"good"`
+	Goods []Good `json:"goods"`
+}

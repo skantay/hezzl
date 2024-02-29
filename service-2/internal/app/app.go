@@ -36,17 +36,20 @@ func Run() error {
 		return err
 	}
 
-	defer func() error {
-		if err := migrateDown(db); err != nil {
-			return err
-		}
+	// In case
+	// defer func() error {
+	// 	if err := migrateDown(db); err != nil {
+	// 		return err
+	// 	}
 
-		return nil
-	}()
+	// 	return nil
+	// }()
 
-	nc, err := nats.Connect(nats.DefaultURL)
+	nc, err := nats.Connect(fmt.Sprintf("nats://%s:%d",
+		cfg.Nats.Host,
+		cfg.Nats.Port))
 	if err != nil {
-		panic(err)
+		return err
 	}
 	defer nc.Close()
 
@@ -62,7 +65,13 @@ func Run() error {
 }
 
 func connectClickhouse(cfg config.Config) (*sql.DB, error) {
-	dsn := "tcp://localhost:9000?username=default&password=&database=default"
+	dsn := fmt.Sprintf("clickhouse://%s:%d?username=%s&password=%s&database=%s",
+		cfg.Database.Clickhouse.Host,
+		cfg.Database.Clickhouse.Port,
+		cfg.Database.Clickhouse.User,
+		cfg.Database.Clickhouse.Password,
+		cfg.Database.Clickhouse.DB,
+	)
 	conn, err := sql.Open("clickhouse", dsn)
 	if err != nil {
 		return nil, err

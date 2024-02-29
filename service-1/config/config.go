@@ -7,20 +7,17 @@ import (
 type Config struct {
 	Database Database `yaml:"database"`
 	Server   Server   `yaml:"server"`
+	Nats     Nats     `yaml:"nats"`
+}
+
+type Nats struct {
+	Host string `yaml:"host"`
+	Port int    `yaml:"port"`
 }
 
 type Database struct {
-	Postgres   Postgres   `yaml:"postgres"`
-	Redis      Redis      `yaml:"redis"`
-	Clickhouse Clickhouse `yaml:"clickhouse"`
-}
-
-type Clickhouse struct {
-	User     string `yaml:"user"`
-	Password string `yaml:"default_password"`
-	Host     string `yaml:"host"`
-	Port     int    `yaml:"port"`
-	Sslmode  string `yaml:"sslmode"`
+	Postgres Postgres `yaml:"postgres"`
+	Redis    Redis    `yaml:"redis"`
 }
 
 type Postgres struct {

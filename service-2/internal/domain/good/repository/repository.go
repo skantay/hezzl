@@ -8,7 +8,7 @@ import (
 )
 
 type GoodRepository interface {
-	Create(model.Good) error
+	Create(collection model.Collection) error
 }
 
 type goodRepository struct {
@@ -19,7 +19,7 @@ func New(db *sql.DB) GoodRepository {
 	return goodRepository{db}
 }
 
-func (g goodRepository) Create(good model.Good) error {
+func (g goodRepository) Create(collection model.Collection) error {
 	batch, err := g.db.Begin()
 	if err != nil {
 		return fmt.Errorf("failed to begin transaction: %w", err)
@@ -32,11 +32,20 @@ func (g goodRepository) Create(good model.Good) error {
 	}
 	defer stmt.Close()
 
-	createdAt := good.CreatedAt.AddDate(-18, -5, +18)
+	if collection.Good != (model.Good{}) {
+		createdAt := collection.Good.CreatedAt.AddDate(-18, -5, +18)
+		_, err = stmt.Exec(collection.Good.ID, collection.Good.ProjectID, collection.Good.Name, collection.Good.Description, collection.Good.Priority, collection.Good.Removed, createdAt)
+		if err != nil {
+			return fmt.Errorf("failed to execute statement for single good: %w", err)
+		}
+	}
 
-	_, err = stmt.Exec(good.ID, good.ProjectID, good.Name, good.Description, good.Priority, good.Removed, createdAt)
-	if err != nil {
-		return fmt.Errorf("failed to execute statement: %w", err)
+	for _, good := range collection.Goods {
+		createdAt := good.CreatedAt.AddDate(-18, -5, +18)
+		_, err = stmt.Exec(good.ID, good.ProjectID, good.Name, good.Description, good.Priority, good.Removed, createdAt)
+		if err != nil {
+			return fmt.Errorf("failed to execute statement for collection of goods: %w", err)
+		}
 	}
 
 	if err := batch.Commit(); err != nil {
