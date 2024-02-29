@@ -41,7 +41,7 @@ func NewGoodUsecase(repo postgres.GoodRepository, cache cache.GoodCacheRepositor
 }
 
 func (g goodUsecase) Create(ctx context.Context, projectID int, name string) (entity.Good, error) {
-	maxPriority, err := g.repo.GetMaxPriority(ctx)
+	maxPriority, err := g.repo.GetMaxPriority(ctx, projectID)
 	if err != nil {
 		return entity.Good{}, fmt.Errorf("repository get max priority error: %w", err)
 	}

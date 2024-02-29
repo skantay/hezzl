@@ -17,7 +17,7 @@ type GoodRepository interface {
 	UpdateName(ctx context.Context, desc string, id, projectID int) (entity.Good, error)
 	UpdatePriority(ctx context.Context, priority, id, projectID int) ([]entity.Good, error)
 	Get(ctx context.Context, id int) (entity.Good, error)
-	GetMaxPriority(ctx context.Context) (int, error)
+	GetMaxPriority(ctx context.Context, projectID int) (int, error)
 	CountRows(ctx context.Context) (int, error)
 }
 
@@ -34,10 +34,10 @@ func New(db *sql.DB, nc v.NC) GoodRepository {
 	return goodRepository{db, nc}
 }
 
-func (g goodRepository) GetMaxPriority(ctx context.Context) (int, error) {
+func (g goodRepository) GetMaxPriority(ctx context.Context, projectID int) (int, error) {
 	var maxPriority *int
 
-	if err := g.db.QueryRowContext(ctx, "SELECT MAX(priority) FROM goods").Scan(&maxPriority); err != nil && err != sql.ErrNoRows {
+	if err := g.db.QueryRowContext(ctx, "SELECT MAX(priority) FROM goods WHERE project_id = $1", projectID).Scan(&maxPriority); err != nil && err != sql.ErrNoRows {
 		return 0, fmt.Errorf("get max priority error: %w", err)
 	}
 	if maxPriority == nil {
