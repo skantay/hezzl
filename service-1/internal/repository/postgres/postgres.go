@@ -47,11 +47,14 @@ func (g goodRepository) GetMaxPriority(ctx context.Context, projectID int) (int,
 }
 
 func (g goodRepository) Create(ctx context.Context, good entity.Good) (entity.Good, error) {
-	tx, err := g.db.BeginTx(ctx, nil)
+	var exists bool
+	err := g.db.QueryRowContext(ctx, "SELECT EXISTS(SELECT 1 FROM projects WHERE id = $1)", good.ProjectID).Scan(&exists)
 	if err != nil {
-		return entity.Good{}, fmt.Errorf("trouble with starting a transaction: %w", err)
+		return entity.Good{}, fmt.Errorf("trouble checking project existence: %w", err)
 	}
-	defer tx.Rollback()
+	if !exists {
+		return entity.Good{}, entity.ErrProjectNotFound
+	}
 
 	stmt := `INSERT INTO goods(project_id, name, description, priority, removed, created_at)
              VALUES($1, $2, $3, $4, $5, $6) RETURNING *;`
@@ -74,23 +77,7 @@ func (g goodRepository) Create(ctx context.Context, good entity.Good) (entity.Go
 		&newGood.CreatedAt,
 	)
 	if err != nil {
-		if err.Error() == `pq: insert or update on table "goods" violates foreign key constraint "goods_project_id_fkey"` {
-			return newGood, entity.ErrProjectNotFound
-		}
 		return newGood, fmt.Errorf("trouble executing db: %w", err)
-	}
-
-	err = tx.Commit()
-	if err != nil {
-		return entity.Good{}, fmt.Errorf("trouble with committing a transaction: %w", err)
-	}
-
-	var payload Collection
-
-	payload.Goods = []entity.Good{newGood}
-
-	if len(payload.Goods) != 0 {
-		g.nc.SendJSON(ctx, payload)
 	}
 
 	return newGood, nil
